@@ -10,16 +10,30 @@ import Cocoa
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     
+    var window: NSWindow!
+    var viewController: ViewController!
+    
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-
-        // instantly terminate the app, since it's not needed
-        NSApplication.shared.terminate(nil)
+        
+        viewController = ViewController()
+        window = NSWindow(contentViewController: viewController)
+        window.contentView = viewController.view
+        
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.styleMask.remove([.resizable])
+        window.isMovableByWindowBackground = true
+        
+        window.makeKeyAndOrderFront(nil)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
     }
 
-
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return true
+    }
+    
 }
 

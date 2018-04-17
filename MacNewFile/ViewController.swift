@@ -2,84 +2,86 @@
 //  ViewController.swift
 //  MacNewFile
 //
-//  Created by 陈冰峰 on 01/09/2017.
-//  Copyright © 2017 MajorEssense. All rights reserved.
+//  Created by Tobias Dunkel on 17.04.18.
+//  Copyright © 2018 MajorEssense. All rights reserved.
 //
 
-import Cocoa
+import AppKit
 
-
-extension String {
-    var localized: String {
-        return NSLocalizedString(self, tableName: nil, bundle: Bundle.main, value: "", comment: "")
+class ViewController : NSViewController {
+    
+    let imageView: NSImageView = {
+        let view = NSImageView()
+        view.image = NSImage(named: NSImage.Name(rawValue: "AppIcon"))
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isEditable = false
+        return view
+    }()
+    
+    let titleLabel: NSText = {
+        let label = NSText()
+        label.isEditable = false
+        label.isSelectable = false
+        label.alignment = .center
+        label.drawsBackground = false
+        //label.backgroundColor = .clear
+        label.string = "MacNewFile"
+        label.textColor = .black
+        label.font = .boldSystemFont(ofSize: 16)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    let subtitleLabel: NSText = {
+        let label = NSText()
+        label.isEditable = false
+        label.isSelectable = false
+        label.alignment = .center
+        label.drawsBackground = false
+        label.string = "First activate the Finder extension in the System settings. \n\nAfter that the Finder Toolbar Icon will be available."
+        label.textColor = .black
+        label.font = .systemFont(ofSize: 12)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    override func loadView() {
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 250))
+        self.view = view
     }
-}
-
-class ViewController: NSViewController {
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupView()
+    }
+    
+    private func setupView() {
+        view.addSubview(titleLabel)
+        view.addSubview(imageView)
+        view.addSubview(subtitleLabel)
 
-        // Do any additional setup after loading the view.
-        
-//        self.labelMain.stringValue = "PutFileTo".localized
-    }
 
-    override var representedObject: Any? {
-        didSet {
-        // Update the view, if already loaded.
-        }
-    }
-    
-    @IBAction func onclick(_ sender: NSButton) {
-        openMyFolder()
-    }
-    
-    
-    @IBAction func showSite(_ sender: NSButton) {
-        if let url = URL(string: "https://github.com/majoressense/macnewfile"), NSWorkspace.shared().open(url) {
-            print("default browser was successfully opened")
-        }
-    }
-    
-    func makeSureTheFolder()
-    {
+        NSLayoutConstraint.activate([
+            titleLabel.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 8),
+            titleLabel.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -8),
+            titleLabel.heightAnchor.constraint(equalToConstant: 20),
+            titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 16)
+        ])
         
-        // check ~/.macnewfile path, if not exist, create it
-        let fullPath = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Containers/co.ch3n.MacNewFile.NewFileEx/Data/MacNewFile")
+        NSLayoutConstraint.activate([
+            imageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            imageView.widthAnchor.constraint(equalToConstant: 80),
+            imageView.heightAnchor.constraint(equalToConstant: 80),
+            imageView.topAnchor.constraint(equalTo: view.topAnchor, constant: 8)
+            ])
         
-        if !FileManager.default.fileExists(atPath: fullPath.path) {
-            // file does not exist
-            do {
-                NSLog(fullPath.absoluteString)
-                try FileManager.default.createDirectory(at: fullPath, withIntermediateDirectories: false, attributes: nil)
-            } catch let error as NSError {
-                NSLog(error.localizedDescription);
-            }
-            NSLog("not exist")
-        }
+        NSLayoutConstraint.activate([
+            subtitleLabel.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 8),
+            subtitleLabel.rightAnchor.constraint(equalTo: view.rightAnchor, constant: -8),
+            subtitleLabel.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8)
+            ])
     }
-    
-    func openMyFolder()
-    {
-        // check ~/.macnewfile path, if not exist, create it, finally, open it in finder window
-        let fullPath = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Containers/co.ch3n.MacNewFile.NewFileEx/Data/MacNewFile")
-        
-        makeSureTheFolder()
-        
-        NSWorkspace.shared().selectFile(nil, inFileViewerRootedAtPath: fullPath.path)
-        
-        do {
-            let directoryContents = try FileManager.default.contentsOfDirectory(atPath: fullPath.path)
-            print(directoryContents)
-        } catch let error as NSError {
-            print(error.localizedDescription)
-        }
-
-    }
-
-    @IBOutlet weak var labelMain: NSTextField!
-    
     
 }
 

@@ -8,5 +8,9 @@
 
 import Cocoa
 
+let app = NSApplication.shared
 let delegate = AppDelegate() //alloc main app's delegate class
-NSApplication.shared.delegate = delegate //set as app's delegate
+
+app.delegate = delegate
+
+_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
