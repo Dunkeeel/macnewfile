@@ -8,13 +8,12 @@
 
 import Cocoa
 
-@NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Insert code here to initialize your application
-        NSApplication.shared.terminate(nil)
 
+        // instantly terminate the app, since it's not needed
+        NSApplication.shared.terminate(nil)
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {

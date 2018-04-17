@@ -11,7 +11,11 @@ import FinderSync
 
 class FinderSync: FIFinderSync {
     
-    let templateDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("MacNewFile")
+    // MARK: - Properties
+    
+    private let templateDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("MacNewFile")
+    
+    // MARK: - Toolbar Item
     
     override var toolbarItemName: String {
         return "NewFile"
@@ -55,8 +59,10 @@ class FinderSync: FIFinderSync {
         return menu
     }
     
+    // MARK: - Methods
+    
     // created the template directory if it doesn't exist already
-    func createFolderIfNeeded() {
+    private func createFolderIfNeeded() {
         if !FileManager.default.fileExists(atPath: templateDirectory.path) {
             do {
                 try FileManager.default.createDirectory(at: templateDirectory, withIntermediateDirectories: false, attributes: nil)
@@ -66,7 +72,7 @@ class FinderSync: FIFinderSync {
         }
     }
     
-    func getTemplateFiles() -> [URL]{
+    private func getTemplateFiles() -> [URL]{
         do {
             let files = try FileManager.default.contentsOfDirectory(at: templateDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
             return files
@@ -77,31 +83,7 @@ class FinderSync: FIFinderSync {
         }
     }
     
-    @objc func openTemplateFolder() {
-        createFolderIfNeeded()
-        
-        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: templateDirectory.path)
-    }
-    
-    func getDestinationURL(_ fileName:String) -> URL? {
-        guard let currentFolder = FIFinderSyncController.default().targetedURL() else { return nil }
-        
-        var index = 0
-       
-        while index < 100 {
-            
-            let little_name = index > 0 ? String.init(format: "%d %@", index, fileName) : fileName
-            print(little_name)
-            let des_full_path = currentFolder.appendingPathComponent(little_name)
-            if !FileManager.default.fileExists(atPath: des_full_path.path) {
-                return des_full_path
-            }
-            index += 1
-        }
-        return currentFolder.appendingPathComponent(fileName)
-    }
-    
-    func renameIfExist(file fileName: String, in folderURL: URL) -> URL {
+    private func renameIfExist(file fileName: String, in folderURL: URL) -> URL {
         
         var file = folderURL.appendingPathComponent(fileName)
         var fileExtists = false
@@ -124,7 +106,15 @@ class FinderSync: FIFinderSync {
         return file
     }
     
-    @objc func addFile(_ item: NSMenuItem){
+    // MARK: - MenuItem Actions
+    
+    @objc private func openTemplateFolder() {
+        createFolderIfNeeded()
+        
+        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: templateDirectory.path)
+    }
+    
+    @objc private func addFile(_ item: NSMenuItem){
         guard let destinationURL = FIFinderSyncController.default().targetedURL() else { return }
 
         let fileName = item.title
