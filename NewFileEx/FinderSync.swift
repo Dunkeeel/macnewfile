@@ -11,12 +11,7 @@ import FinderSync
 
 class FinderSync: FIFinderSync {
     
-    var _fullPath = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("MacNewFile")
-    
-    override init() {
-        super.init()
-    }
-    
+    let templateDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("MacNewFile")
     
     override var toolbarItemName: String {
         return "NewFile"
@@ -27,98 +22,122 @@ class FinderSync: FIFinderSync {
     }
     
     override var toolbarItemImage: NSImage {
-        return NSImage(named: NSImageNameAddTemplate)!
-    }
-    
-    
-    func makeSureTheFolder() {
-        NSLog("make sure the folder from ext")
-        
-        if !FileManager.default.fileExists(atPath: _fullPath.path) {
-            do {
-                try FileManager.default.createDirectory(at: _fullPath, withIntermediateDirectories: false, attributes: nil)
-                NSLog("create the folder")
-            } catch let error as NSError {
-                NSLog(error.localizedDescription);
-            }
-            NSLog("not exist")
-        }
-    }
-    
-    func getTemplateFileList() -> [String]{
-        
-        do {
-            let directoryContents = try FileManager.default.contentsOfDirectory(atPath: _fullPath.path)
-            print(directoryContents)
-            
-            if (directoryContents.count == 0){
-                print("create init files")
-                let names = ["new.md", "new.txt"]
-                for name in names{
-                    
-                    let path = _fullPath.appendingPathComponent(name)
-                    do {
-                        try "".write(toFile: path.path, atomically: false, encoding: .utf8)
-                    } catch  {
-                        print("add file to \(path) failed : \(error.localizedDescription)")
-                    }
-                }
-            }
-            
-            
-            return directoryContents
-        } catch let error as NSError {
-            print(error.localizedDescription)
-        }
-        return []
+        return NSImage(named: NSImage.Name.addTemplate)!
     }
     
     override func menu(for menuKind: FIMenuKind) -> NSMenu {
-        makeSureTheFolder()
-        let menu = NSMenu(title: "")
-        var items = getTemplateFileList()
-        items = items.filter{$0 != ".DS_Store"}
-        for item in items {
-            NSLog(item)
-            menu.addItem(withTitle: item, action: #selector(addFile(_:)), keyEquivalent: "")
-
+        createFolderIfNeeded()
+        
+        let menu = NSMenu()
+        let templates = getTemplateFiles()
+        
+        if templates.count == 0 {
+            let noTemplatesItem = NSMenuItem(title: "templates folder is empty", action: nil, keyEquivalent: "")
+            noTemplatesItem.isEnabled = false
+            menu.addItem(noTemplatesItem)
         }
+        
+        // add templates to the menu
+        for file in templates {
+            let menuItem = NSMenuItem(title: file.lastPathComponent, action: #selector(addFile(_:)), keyEquivalent: "")
+            menuItem.image = NSWorkspace.shared.icon(forFile: file.path)
+            menu.addItem(menuItem)
+        }
+        
+        // add line separator
+        let line = NSMenuItem(title: "______________________", action: nil, keyEquivalent: "")
+        line.isEnabled = false
+        menu.addItem(line)
+        
+        // add shortcut to template folder
+        menu.addItem(withTitle: "open template folder", action: #selector(openTemplateFolder), keyEquivalent: "")
+        
         return menu
     }
     
+    // created the template directory if it doesn't exist already
+    func createFolderIfNeeded() {
+        if !FileManager.default.fileExists(atPath: templateDirectory.path) {
+            do {
+                try FileManager.default.createDirectory(at: templateDirectory, withIntermediateDirectories: false, attributes: nil)
+            } catch let error as NSError {
+                NSLog(error.localizedDescription);
+            }
+        }
+    }
     
-    func genDesUrl(_ fileName:String) -> URL {
+    func getTemplateFiles() -> [URL]{
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: templateDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants])
+            return files
+            
+        } catch {
+            print(error.localizedDescription)
+            return []
+        }
+    }
+    
+    @objc func openTemplateFolder() {
+        createFolderIfNeeded()
+        
+        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: templateDirectory.path)
+    }
+    
+    func getDestinationURL(_ fileName:String) -> URL? {
+        guard let currentFolder = FIFinderSyncController.default().targetedURL() else { return nil }
+        
         var index = 0
        
         while index < 100 {
             
             let little_name = index > 0 ? String.init(format: "%d %@", index, fileName) : fileName
             print(little_name)
-            let des_full_path = FIFinderSyncController.default().targetedURL()?.appendingPathComponent(little_name)
-            if !FileManager.default.fileExists(atPath: des_full_path!.path) {
-                return des_full_path!
+            let des_full_path = currentFolder.appendingPathComponent(little_name)
+            if !FileManager.default.fileExists(atPath: des_full_path.path) {
+                return des_full_path
             }
             index += 1
         }
-        return FIFinderSyncController.default().targetedURL()!.appendingPathComponent(fileName)
+        return currentFolder.appendingPathComponent(fileName)
     }
     
-    @IBAction func addFile(_ item: NSMenuItem) {
+    func renameIfExist(file fileName: String, in folderURL: URL) -> URL {
         
-        let little_path = item.title
-        let src_full_path = _fullPath.appendingPathComponent(little_path)
-        NSLog("src = %s", src_full_path.path)
+        var file = folderURL.appendingPathComponent(fileName)
+        var fileExtists = false
+        var suffix = 1
         
-        let des_full_path = genDesUrl(little_path)
-        print(des_full_path)
+        let fileNameWithoutExtension = file.deletingPathExtension().lastPathComponent
+        let fileExtension = file.pathExtension
         
-        if !FileManager.default.fileExists(atPath: des_full_path.path){
-            do {
-                try FileManager.default.copyItem(at: src_full_path, to: des_full_path)
-            } catch{
-                
+        repeat {
+            if FileManager.default.fileExists(atPath: file.path){
+                fileExtists = true
+                let newFileName = "\(fileNameWithoutExtension) copy\(suffix > 1 ? " \(suffix)" : "")"
+                suffix += 1
+                file = folderURL.appendingPathComponent(newFileName).appendingPathExtension(fileExtension)
+            } else {
+                fileExtists = false
             }
-        }
+        } while fileExtists == true
         
+        return file
+    }
+    
+    @objc func addFile(_ item: NSMenuItem){
+        guard let destinationURL = FIFinderSyncController.default().targetedURL() else { return }
+
+        let fileName = item.title
+        let sourceFile = templateDirectory.appendingPathComponent(fileName)
+        let destinationFile = renameIfExist(file: fileName, in: destinationURL)
+                
+        if !FileManager.default.fileExists(atPath: destinationFile.path) {
+            do {
+                try FileManager.default.copyItem(at: sourceFile, to: destinationFile)
+            } catch { print(error) }
+            
+            // selects the created file or directory
+            NSWorkspace.shared.selectFile(destinationFile.path, inFileViewerRootedAtPath: "")
+        }
     }
 }
